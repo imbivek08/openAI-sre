@@ -1,0 +1,37 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e ".[dev]"
+
+      - name: Lint
+        run: .venv/bin/ruff check agent tools integrations api database simulator tests
+
+      - name: Unit tests
+        run: .venv/bin/pytest tests/unit -q
+
+      - name: Security tests
+        run: .venv/bin/pytest tests/security -q
+
+      - name: Bandit
+        run: .venv/bin/bandit -r agent tools integrations api database simulator -q
+
+      - name: pip-audit
+        run: .venv/bin/pip-audit --strict || true

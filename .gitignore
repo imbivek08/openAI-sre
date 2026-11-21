@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node / frontend
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs and runtime artifacts
+var/
+*.log
+*.log.*
+demo-api.log
+
+# Database
+*.sqlite3
+*.db
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store

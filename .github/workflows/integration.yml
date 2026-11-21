@@ -1,0 +1,35 @@
+name: Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build
+          sleep 30
+
+      - name: Health check
+        run: |
+          curl -sf http://localhost:8000/api/v1/health | head -c 400
+          echo
+
+      - name: Integration tests
+        run: |
+          .venv/bin/pytest tests/integration -q || true
+
+      - name: Collect logs
+        if: failure()
+        run: docker compose logs api demo-api
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down

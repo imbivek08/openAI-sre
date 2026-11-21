@@ -1,0 +1,75 @@
+# Sample CI workflow for OpenSRE AI webhook investigation demo.
+#
+# This workflow runs automated tests and a Docker build. It contains a
+# DELIBERATELY FAILING step that can be investigated by OpenSRE AI.
+#
+# To use:
+# 1. Create a new repository from this example directory.
+# 2. Push it to GitHub.
+# 3. In repository Settings -> Secrets, add DEMO_MODE=normal.
+# 4. Configure the OpenSRE AI webhook to point at this repository.
+# 5. Push to main to trigger the workflow, or use "Run workflow" manually.
+#
+# The failure is controlled by the DEMO_MODE input:
+#   - "normal"  -> tests pass, workflow succeeds (control case)
+#   - "fail-test" -> a test assertion fails (investigable failure)
+
+name: Sample CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      demo_mode:
+        description: "Demo failure mode"
+        required: false
+        default: "normal"
+        type: choice
+        options:
+          - normal
+          - fail-test
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pytest
+
+      - name: Run tests
+        run: |
+          mkdir -p tests
+          cat > tests/test_sample.py <<'EOF'
+          def test_arithmetic():
+              # Controlled failure: set demo_mode to "fail-test" to trigger.
+              import os
+              mode = os.environ.get("DEMO_MODE", "normal")
+              if mode == "fail-test":
+                  assert 2 + 2 == 5, "Controlled demo failure: 2 + 2 != 5"
+              else:
+                  assert 2 + 2 == 4
+          EOF
+          DEMO_MODE="${{ github.event.inputs.demo_mode || 'normal' }}" pytest tests/ -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          cat > Dockerfile <<'EOF'
+          FROM python:3.12-slim
+          WORKDIR /app
+          COPY . .
+          CMD ["python", "--version"]
+          EOF
+          docker build -t sample-app:${{ github.sha }} .

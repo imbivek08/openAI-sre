@@ -1,0 +1,11 @@
+.git
+.venv
+node_modules
+.next
+__pycache__
+*.pyc
+var/
+*.log
+.env
+tests/
+docs/
